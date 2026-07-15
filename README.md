@@ -14,24 +14,6 @@ into realistic interviews, structured feedback, and clear next steps.
 The product is intentionally focused: it supports interview preparation without
 pretending to predict hiring decisions or measure personality.
 
-## Project status
-
-InterviewForge is under active development. The foundation and identity/data
-security release is complete and includes:
-
-- Email and password authentication with session restoration.
-- Protected application routes.
-- Candidate profiles with target role and experience level.
-- A Fastify API with bearer-token authentication.
-- Supabase PostgreSQL ownership constraints and Row Level Security.
-- A private, PDF-only resume Storage bucket with ownership policies.
-- A light-first Forge Blue interface for public and authenticated screens.
-- Automated frontend and backend checks through GitHub Actions.
-
-The remaining MVP builds on this secure foundation with resume analysis,
-paste-only job descriptions, adaptive interviews, feedback, progress, and a
-personalized practice roadmap.
-
 ## What makes InterviewForge different
 
 ### Practice grounded in context
@@ -41,7 +23,7 @@ a pasted job description rather than generic question lists.
 
 ### Explainable adaptation
 
-The planned `adaptive-v1` engine is deterministic and versioned. AI evaluates
+The `adaptive-v1` engine is deterministic and versioned. AI evaluates
 answers, but application rules decide the next topic, difficulty, and follow-up
 strategy.
 
@@ -120,8 +102,7 @@ InterviewForge/
 - A Supabase project
 - Git
 
-Gemini credentials are not required for the currently implemented identity and
-profile functionality.
+Gemini credentials are used only for AI-powered analysis and evaluation.
 
 ### 1. Clone the repository
 
@@ -177,27 +158,7 @@ AI_TIMEOUT_MS=30000
 Use Supabase publishable keys in the current applications. Never expose a
 service-role key, database password, or Gemini API key to the frontend.
 
-### 4. Apply the Supabase migrations
-
-Review and run these files manually in order against the intended Supabase
-project:
-
-```text
-supabase/migrations/20260715020000_create_profiles.sql
-supabase/migrations/20260715230000_create_mvp_domain_tables.sql
-supabase/migrations/20260715231000_create_private_resume_storage.sql
-```
-
-Then run the read-only verification script:
-
-```text
-supabase/verification/milestone_1_catalog_checks.sql
-```
-
-The repository never applies migrations to a remote Supabase project
-automatically.
-
-### 5. Start the applications
+### 4. Start the applications
 
 On Windows, launch both development servers from the repository root:
 
@@ -219,19 +180,6 @@ npm run dev
 
 - Frontend: `http://localhost:3000`
 - Backend health: `http://localhost:4000/health`
-
-## Available API
-
-The current release exposes:
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/health` | Unauthenticated service health |
-| `GET` | `/api/v1/profile` | Read the authenticated user's profile |
-| `PUT` | `/api/v1/profile` | Create or update the authenticated user's profile |
-
-Business endpoints require a Supabase bearer access token. Fastify performs
-authorization and Supabase RLS provides defense in depth.
 
 ## Quality checks
 
@@ -275,7 +223,7 @@ these rules:
 - Cross-user database and Storage access is blocked by ownership policies.
 - Full resumes, job descriptions, answers, access tokens, and prompts must not
   appear in logs.
-- Common direct identifiers are removed before planned AI processing.
+- Common direct identifiers are removed before AI processing.
 - AI output is schema-validated and treated as coaching guidance.
 - Expected concepts and evaluation rubrics are never exposed before submission.
 - Text mode remains available when voice is unsupported or denied.
