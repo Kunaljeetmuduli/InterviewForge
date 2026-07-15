@@ -2,11 +2,12 @@ import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 import { z } from "zod";
 
+import { createAuthenticateHook } from "./modules/auth/auth.hook.js";
+import type { AuthVerifier } from "./modules/auth/auth.types.js";
 import { registerProfileRoutes } from "./modules/profile/profile.routes.js";
-import type {
-  AuthVerifier,
-  ProfileRepository,
-} from "./modules/profile/profile.types.js";
+import type { ProfileRepository } from "./modules/profile/profile.types.js";
+import { registerResumeRoutes } from "./modules/resume/resume.routes.js";
+import type { ResumeRepository } from "./modules/resume/resume.types.js";
 
 const healthResponseSchema = z.object({
   status: z.literal("ok"),
@@ -27,11 +28,27 @@ const unavailableProfileRepository: ProfileRepository = {
     Promise.reject(new Error("Profile repository is not configured.")),
 };
 
+const unavailableResumeRepository: ResumeRepository = {
+  hasPrimaryForUser: () =>
+    Promise.reject(new Error("Resume repository is not configured.")),
+  createForUser: () =>
+    Promise.reject(new Error("Resume repository is not configured.")),
+  listForUser: () =>
+    Promise.reject(new Error("Resume repository is not configured.")),
+  findByIdForUser: () =>
+    Promise.reject(new Error("Resume repository is not configured.")),
+  removeStorageObject: () =>
+    Promise.reject(new Error("Resume repository is not configured.")),
+  deleteForUser: () =>
+    Promise.reject(new Error("Resume repository is not configured.")),
+};
+
 interface BuildAppOptions {
   logger?: boolean;
   corsOrigins?: string[];
   authVerifier?: AuthVerifier;
   profileRepository?: ProfileRepository;
+  resumeRepository?: ResumeRepository;
 }
 
 export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
@@ -43,7 +60,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (options.corsOrigins) {
     void app.register(cors, {
       origin: options.corsOrigins,
-      methods: ["GET", "HEAD", "POST", "PUT"],
+      methods: ["DELETE", "GET", "HEAD", "POST", "PUT"],
     });
   }
 
@@ -84,10 +101,19 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       }),
   );
 
+  const authenticate = createAuthenticateHook(
+    app,
+    options.authVerifier ?? rejectingAuthVerifier,
+  );
+
   registerProfileRoutes(app, {
-    authVerifier: options.authVerifier ?? rejectingAuthVerifier,
+    authenticate,
     profileRepository:
       options.profileRepository ?? unavailableProfileRepository,
+  });
+  registerResumeRoutes(app, {
+    authenticate,
+    resumeRepository: options.resumeRepository ?? unavailableResumeRepository,
   });
 
   return app;

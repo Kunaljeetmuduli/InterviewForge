@@ -5,6 +5,7 @@ import { loadEnvironment } from "./config/env.js";
 import {
   createSupabaseAuthVerifier,
   createSupabaseProfileRepository,
+  createSupabaseResumeRepository,
 } from "./infrastructure/supabase.js";
 
 try {
@@ -25,6 +26,7 @@ const app = buildApp({
   corsOrigins: environment.corsOrigins,
   authVerifier: createSupabaseAuthVerifier(environment),
   profileRepository: createSupabaseProfileRepository(environment),
+  resumeRepository: createSupabaseResumeRepository(environment),
 });
 
 try {

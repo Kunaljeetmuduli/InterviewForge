@@ -1,4 +1,4 @@
-import { LayoutDashboard, UserRound } from "lucide-react";
+import { FileText, LayoutDashboard, UserRound } from "lucide-react";
 import Link from "next/link";
 
 import { AccountMenu } from "@/components/account-menu";
@@ -7,6 +7,7 @@ import { LogoutButton } from "@/components/logout-button";
 
 const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Resume Analysis", href: "/resumes", icon: FileText },
 ] as const;
 
 export function AppNavigation() {

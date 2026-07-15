@@ -1,31 +1,14 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance, preHandlerAsyncHookHandler } from "fastify";
 
 import { ProfileService } from "./profile.service.js";
 import {
   profileInputSchema,
-  type AuthContext,
-  type AuthVerifier,
   type ProfileRepository,
 } from "./profile.types.js";
 
-declare module "fastify" {
-  interface FastifyRequest {
-    authContext: AuthContext | null;
-  }
-}
-
 interface ProfileRouteDependencies {
-  authVerifier: AuthVerifier;
+  authenticate: preHandlerAsyncHookHandler;
   profileRepository: ProfileRepository;
-}
-
-function unauthorized(reply: FastifyReply) {
-  return reply.status(401).send({
-    error: {
-      code: "UNAUTHORIZED",
-      message: "A valid access token is required.",
-    },
-  });
 }
 
 export function registerProfileRoutes(
@@ -34,28 +17,9 @@ export function registerProfileRoutes(
 ): void {
   const service = new ProfileService(dependencies.profileRepository);
 
-  app.decorateRequest("authContext", null);
-
-  const authenticate = async (request: FastifyRequest, reply: FastifyReply) => {
-    const authorization = request.headers.authorization;
-    const [scheme, accessToken] = authorization?.split(" ") ?? [];
-
-    if (scheme?.toLowerCase() !== "bearer" || !accessToken) {
-      return unauthorized(reply);
-    }
-
-    const user = await dependencies.authVerifier.verify(accessToken);
-
-    if (!user) {
-      return unauthorized(reply);
-    }
-
-    request.authContext = { accessToken, user };
-  };
-
   app.get(
     "/api/v1/profile",
-    { preHandler: authenticate },
+    { preHandler: dependencies.authenticate },
     async (request, reply) => {
       const profile = await service.getProfile(request.authContext!);
 
@@ -68,7 +32,7 @@ export function registerProfileRoutes(
 
   app.put(
     "/api/v1/profile",
-    { preHandler: authenticate },
+    { preHandler: dependencies.authenticate },
     async (request, reply) => {
       const result = profileInputSchema.safeParse(request.body);
 

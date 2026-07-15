@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export type {
+  AuthContext,
+  AuthenticatedUser,
+  AuthVerifier,
+} from "../auth/auth.types.js";
+
 export const profileInputSchema = z
   .object({
     full_name: z.string().trim().min(1).max(120),
@@ -16,20 +22,6 @@ export const profileSchema = profileInputSchema.extend({
 
 export type ProfileInput = z.infer<typeof profileInputSchema>;
 export type Profile = z.infer<typeof profileSchema>;
-
-export interface AuthenticatedUser {
-  id: string;
-  email?: string;
-}
-
-export interface AuthContext {
-  accessToken: string;
-  user: AuthenticatedUser;
-}
-
-export interface AuthVerifier {
-  verify(accessToken: string): Promise<AuthenticatedUser | null>;
-}
 
 export interface ProfileRepository {
   findByUserId(userId: string, accessToken: string): Promise<Profile | null>;

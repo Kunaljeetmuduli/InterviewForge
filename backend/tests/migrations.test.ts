@@ -15,6 +15,13 @@ const storageMigration = readFileSync(
   ),
   "utf8",
 ).toLowerCase();
+const resumeAccessMigration = readFileSync(
+  resolve(
+    migrationsDirectory,
+    "20260715235250_enable_resume_metadata_access.sql",
+  ),
+  "utf8",
+).toLowerCase();
 
 const ownedTables = [
   "resumes",
@@ -87,5 +94,14 @@ describe("Milestone 1 migrations", () => {
     );
     expect(storageMigration).not.toContain("service_role");
     expect(storageMigration).not.toContain("security definer");
+  });
+
+  it("grants only the table operations required by the resume upload slice", () => {
+    expect(resumeAccessMigration).toContain("grant select, insert, delete");
+    expect(resumeAccessMigration).toContain("on table public.resumes");
+    expect(resumeAccessMigration).toContain("to authenticated");
+    expect(resumeAccessMigration).not.toContain("update");
+    expect(resumeAccessMigration).not.toContain("anon");
+    expect(resumeAccessMigration).not.toContain("service_role");
   });
 });
