@@ -45,3 +45,12 @@ Thumbs.db
 
 # Local verification output
 .artifacts/
+
+# Local project planning and architecture documents
+/README.md
+/CONTRIBUTING.md
+/SECURITY.md
+/PLAN.md
+/PLAN_AMENDMENTS.md
+/INTERVIEWFORGE_ARCHITECTURE.md
+/docs/

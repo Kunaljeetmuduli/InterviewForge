@@ -1,4 +1,5 @@
 import { BrandMark } from "@/components/brand-mark";
+import Link from "next/link";
 
 const navigation = [
   { label: "Product", href: "#product-preview" },
@@ -24,9 +25,20 @@ export function SiteHeader() {
             </a>
           ))}
         </nav>
-        <span className="rounded-full border border-primary/20 bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">
-          Foundation
-        </span>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/login"
+            className="hidden min-h-10 items-center rounded-sm px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-surface-subtle hover:text-foreground sm:inline-flex"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/signup"
+            className="inline-flex min-h-10 items-center rounded-sm bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+          >
+            Get started
+          </Link>
+        </div>
       </div>
     </header>
   );

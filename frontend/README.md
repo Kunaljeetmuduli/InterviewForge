@@ -10,4 +10,4 @@ npm run typecheck
 npm run build
 ```
 
-See the repository root `README.md`, `PRODUCT.md`, `DESIGN.md`, and `INTERVIEWFORGE_ARCHITECTURE.md` before implementing features.
+See the repository root `README.md`, `PRODUCT.md`, and `DESIGN.md` before implementing features.
