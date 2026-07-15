@@ -45,6 +45,7 @@ Thumbs.db
 
 # Local verification output
 .artifacts/
+/.impeccable/
 
 # Local project planning and architecture documents
 /README.md
