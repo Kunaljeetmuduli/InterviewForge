@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# Backend build and coverage
+backend/dist/
+backend/coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!frontend/.env.example
+!backend/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test and browser artifacts
+coverage/
+playwright-report/
+test-results/
+*.webm
+
+# Local Supabase state
+supabase/.branches/
+supabase/.temp/
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# TypeScript and tool caches
+*.tsbuildinfo
+.eslintcache
+.turbo/
+
+# Local verification output
+.artifacts/
