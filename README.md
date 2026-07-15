@@ -1,6 +1,6 @@
 # InterviewForge
 
-**Focused, evidence-led interview preparation for software candidates.**
+**Adaptive interview practice with evidence-based feedback and clear next steps.**
 
 [![CI](https://github.com/Kunaljeetmuduli/InterviewForge/actions/workflows/ci.yml/badge.svg)](https://github.com/Kunaljeetmuduli/InterviewForge/actions/workflows/ci.yml)
 [![Node.js 24](https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
@@ -14,7 +14,7 @@ into realistic interviews, structured feedback, and clear next steps.
 The product is intentionally focused: it supports interview preparation without
 pretending to predict hiring decisions or measure personality.
 
-## What makes InterviewForge different
+## Highlights
 
 ### Practice grounded in context
 
@@ -38,13 +38,22 @@ next action.
 Core interviews work through text. Browser-native speech input and playback are
 optional enhancements, never requirements.
 
-## Product scope
+## How it works
 
-The MVP is intentionally constrained:
+```mermaid
+flowchart LR
+    Profile[Build your profile] --> Context[Add resume and job context]
+    Context --> Format[Choose Quick 5 or Full 10]
+    Format --> Practice[Answer one question at a time]
+    Practice --> Feedback[Review structured feedback]
+    Feedback --> Roadmap[Focus the next practice session]
+```
+
+## Core experience
 
 - Interview modes: HR, Technical, Behavioral, and DSA verbal.
 - Interview formats: exactly **Quick 5** or **Full 10**, with Quick 5 as default.
-- Job descriptions: pasted text only; JD PDF upload is outside the MVP.
+- Job descriptions: focused, paste-only role context.
 - Resumes: private, text-based PDF files up to 5 MB.
 - Voice: browser Web Speech APIs with an editable text fallback.
 - Adaptive logic: deterministic and stored as `adaptive-v1` per interview.
@@ -65,8 +74,9 @@ flowchart LR
     Realtime --> Web
 ```
 
-InterviewForge uses two independent npm applications in one repository. There
-is no root workspace, shared-package orchestrator, or Next.js business backend.
+InterviewForge uses independent Next.js and Fastify applications in one
+repository. Fastify owns business APIs, while Supabase provides identity,
+persistence, private file storage, and defense-in-depth authorization.
 
 | Layer | Technology |
 | --- | --- |
@@ -74,8 +84,8 @@ is no root workspace, shared-package orchestrator, or Next.js business backend.
 | Backend | Node.js 24, Fastify, TypeScript, Zod |
 | Data platform | Supabase PostgreSQL, Auth, Storage, Realtime |
 | Testing | Vitest, TypeScript, ESLint, production builds |
-| AI direction | Gemini through a validated `AIClient` abstraction |
-| Deployment direction | Vercel, Render, and Supabase |
+| AI | Gemini through a validated `AIClient` abstraction |
+| Deployment | Vercel, Render, and Supabase |
 
 ## Repository structure
 
@@ -203,9 +213,9 @@ npm run build
 ```
 
 The GitHub Actions workflow runs the same checks on every push to `main` and on
-pull requests. It does not create branches or dependency-update pull requests.
+pull requests.
 
-## Design direction
+## Design system
 
 InterviewForge uses a restrained **Forge Blue + Slate** visual system. The
 interface is light-first, keyboard-friendly, reduced-motion aware, and designed
@@ -231,6 +241,11 @@ these rules:
 
 Do not commit real candidate data or secrets. Local `.env` files are excluded
 from Git.
+
+## Project documentation
+
+- [Product principles](PRODUCT.md)
+- [Design system](DESIGN.md)
 
 ## License
 
