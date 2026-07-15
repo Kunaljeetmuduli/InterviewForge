@@ -73,7 +73,7 @@ const barClasses = {
 export function ProductPreview() {
   return (
     <div className="surface-shadow overflow-hidden rounded-lg border border-border bg-surface">
-      <div className="grid min-h-[630px] lg:grid-cols-[240px_1fr]">
+      <div className="grid min-h-157.5 lg:grid-cols-[240px_1fr]">
         <aside className="hidden border-r border-border bg-surface px-4 py-5 lg:flex lg:flex-col">
           <div className="px-2">
             <BrandMark />

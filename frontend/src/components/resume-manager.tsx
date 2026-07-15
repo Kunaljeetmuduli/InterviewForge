@@ -333,7 +333,7 @@ export function ResumeManager() {
             <p className="text-sm font-semibold text-primary">Your documents</p>
             <h2
               id="resume-list-heading"
-              className="mt-1 text-2xl font-semibold tracking-[-0.025em]"
+              className="mt-1 text-2xl font-semibold tracking-tight"
             >
               Uploaded resumes
             </h2>
