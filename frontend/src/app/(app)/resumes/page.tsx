@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ResumeManager } from "@/components/resume-manager";
+import { ResumeAnalysisManager } from "@/components/resume-analysis-manager";
 
 export const metadata: Metadata = { title: "Resume Analysis" };
 
@@ -15,7 +15,7 @@ export default function ResumesPage() {
         Upload a text-based PDF resume to keep your interview preparation
         grounded in your actual experience.
       </p>
-      <ResumeManager />
+      <ResumeAnalysisManager />
     </>
   );
 }

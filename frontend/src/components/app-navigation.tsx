@@ -1,5 +1,8 @@
-import { FileText, LayoutDashboard, UserRound } from "lucide-react";
+"use client";
+
+import { BriefcaseBusiness, FileText, LayoutDashboard, UserRound } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { AccountMenu } from "@/components/account-menu";
 import { BrandMark } from "@/components/brand-mark";
@@ -8,9 +11,12 @@ import { LogoutButton } from "@/components/logout-button";
 const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Resume Analysis", href: "/resumes", icon: FileText },
+  { label: "Job Descriptions", href: "/jobs", icon: BriefcaseBusiness },
 ] as const;
 
 export function AppNavigation() {
+  const pathname = usePathname();
+
   return (
     <aside className="border-b border-border bg-surface md:fixed md:inset-y-0 md:left-0 md:w-64 md:border-b-0 md:border-r">
       <div className="flex min-h-16 items-center justify-between px-5 md:min-h-full md:flex-col md:items-stretch md:px-4 md:py-5">
@@ -23,7 +29,12 @@ export function AppNavigation() {
               <Link
                 key={href}
                 href={href}
-                className="flex min-h-10 items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-surface-subtle hover:text-foreground"
+                aria-current={pathname === href ? "page" : undefined}
+                className={`flex min-h-10 items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium ${
+                  pathname === href
+                    ? "bg-primary-soft text-primary"
+                    : "text-muted-foreground hover:bg-surface-subtle hover:text-foreground"
+                }`}
               >
                 <Icon aria-hidden="true" className="size-4" />
                 {label}
@@ -40,7 +51,12 @@ export function AppNavigation() {
               key={href}
               href={href}
               aria-label={label}
-              className="inline-flex size-10 items-center justify-center rounded-sm text-muted-foreground hover:bg-surface-subtle hover:text-foreground"
+              aria-current={pathname === href ? "page" : undefined}
+              className={`inline-flex size-10 items-center justify-center rounded-sm ${
+                pathname === href
+                  ? "bg-primary-soft text-primary"
+                  : "text-muted-foreground hover:bg-surface-subtle hover:text-foreground"
+              }`}
             >
               <Icon aria-hidden="true" className="size-5" />
             </Link>
@@ -48,7 +64,12 @@ export function AppNavigation() {
           <Link
             href="/profile"
             aria-label="Profile"
-            className="inline-flex size-10 items-center justify-center rounded-sm text-muted-foreground hover:bg-surface-subtle hover:text-foreground"
+            aria-current={pathname === "/profile" ? "page" : undefined}
+            className={`inline-flex size-10 items-center justify-center rounded-sm ${
+              pathname === "/profile"
+                ? "bg-primary-soft text-primary"
+                : "text-muted-foreground hover:bg-surface-subtle hover:text-foreground"
+            }`}
           >
             <UserRound aria-hidden="true" className="size-5" />
           </Link>

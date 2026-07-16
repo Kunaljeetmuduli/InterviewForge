@@ -107,6 +107,42 @@ export interface ResumeCreateInput {
   file_size: number;
 }
 
+export interface ResumeAnalysis {
+  id: string;
+  user_id: string;
+  resume_id: string;
+  extracted_text: string;
+  summary: string;
+  skills: string[];
+  projects: Array<{
+    name: string;
+    description: string;
+    technologies: string[];
+    evidence: string;
+  }>;
+  education: Array<{
+    qualification: string;
+    institution: string;
+    details: string;
+  }>;
+  experience: Array<{
+    role: string;
+    organization: string;
+    duration: string;
+    duration_years: number | null;
+    highlights: string[];
+  }>;
+  certifications: string[];
+  technologies: string[];
+  strengths: string[];
+  provider: string;
+  model: string;
+  prompt_version: string;
+  schema_version: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface ResumeResponse {
   data: { resume: Resume };
   meta: { requestId: string };
@@ -114,6 +150,11 @@ interface ResumeResponse {
 
 interface ResumeListResponse {
   data: { resumes: Resume[] };
+  meta: { requestId: string };
+}
+
+interface ResumeDetailResponse {
+  data: { resume: Resume; analysis: ResumeAnalysis | null };
   meta: { requestId: string };
 }
 
@@ -136,14 +177,125 @@ export const resumeApi = {
     return payload.data.resumes;
   },
   async get(resumeId: string) {
-    const payload = await authenticatedApiRequest<ResumeResponse>(
+    const payload = await authenticatedApiRequest<ResumeDetailResponse>(
       `/api/v1/resumes/${resumeId}`,
     );
-    return payload.data.resume;
+    return payload.data;
+  },
+  async process(resumeId: string) {
+    const payload = await authenticatedApiRequest<ResumeDetailResponse>(
+      `/api/v1/resumes/${resumeId}/process`,
+      { method: "POST" },
+    );
+    return payload.data;
+  },
+  async retry(resumeId: string) {
+    const payload = await authenticatedApiRequest<ResumeDetailResponse>(
+      `/api/v1/resumes/${resumeId}/retry`,
+      { method: "POST" },
+    );
+    return payload.data;
   },
   delete(resumeId: string) {
     return authenticatedApiRequest<void>(`/api/v1/resumes/${resumeId}`, {
       method: "DELETE",
     });
+  },
+};
+
+export interface JobDescription {
+  id: string;
+  user_id: string;
+  title: string;
+  company: string | null;
+  raw_text: string;
+  status: "pending" | "analyzing" | "completed" | "failed";
+  error_code: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JobDescriptionAnalysis {
+  id: string;
+  user_id: string;
+  job_description_id: string;
+  required_skills: string[];
+  preferred_skills: string[];
+  minimum_experience: string;
+  responsibilities: string[];
+  keywords: string[];
+  matching_skills: string[];
+  missing_skills: string[];
+  alignment_score: number;
+  alignment_algorithm_version: string;
+  provider: string;
+  model: string;
+  prompt_version: string;
+  schema_version: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface JobDescriptionListResponse {
+  data: { job_descriptions: JobDescription[] };
+  meta: { requestId: string };
+}
+
+interface JobDescriptionDetailResponse {
+  data: {
+    jobDescription: JobDescription;
+    analysis: JobDescriptionAnalysis | null;
+  };
+  meta: { requestId: string };
+}
+
+export interface JobDescriptionCreateInput {
+  title: string;
+  company?: string;
+  raw_text: string;
+  resume_id: string;
+}
+
+export const jobDescriptionApi = {
+  async create(input: JobDescriptionCreateInput) {
+    const payload = await authenticatedApiRequest<JobDescriptionDetailResponse>(
+      "/api/v1/job-descriptions",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(input),
+      },
+    );
+    return payload.data;
+  },
+  async list() {
+    const payload = await authenticatedApiRequest<JobDescriptionListResponse>(
+      "/api/v1/job-descriptions",
+    );
+    return payload.data.job_descriptions;
+  },
+  async get(jobDescriptionId: string) {
+    const payload = await authenticatedApiRequest<JobDescriptionDetailResponse>(
+      `/api/v1/job-descriptions/${jobDescriptionId}`,
+    );
+    return payload.data;
+  },
+  async retry(jobDescriptionId: string, resumeId: string) {
+    const payload = await authenticatedApiRequest<JobDescriptionDetailResponse>(
+      `/api/v1/job-descriptions/${jobDescriptionId}/retry`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ resume_id: resumeId }),
+      },
+    );
+    return payload.data;
+  },
+  delete(jobDescriptionId: string) {
+    return authenticatedApiRequest<void>(
+      `/api/v1/job-descriptions/${jobDescriptionId}`,
+      { method: "DELETE" },
+    );
   },
 };

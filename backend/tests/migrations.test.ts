@@ -22,6 +22,13 @@ const resumeAccessMigration = readFileSync(
   ),
   "utf8",
 ).toLowerCase();
+const milestoneTwoMigration = readFileSync(
+  resolve(
+    migrationsDirectory,
+    "20260716191511_complete_milestone_2_context_analysis.sql",
+  ),
+  "utf8",
+).toLowerCase();
 
 const ownedTables = [
   "resumes",
@@ -103,5 +110,39 @@ describe("Milestone 1 migrations", () => {
     expect(resumeAccessMigration).not.toContain("update");
     expect(resumeAccessMigration).not.toContain("anon");
     expect(resumeAccessMigration).not.toContain("service_role");
+  });
+});
+
+describe("Milestone 2 migration", () => {
+  it("grants only the operations required by context analysis", () => {
+    expect(milestoneTwoMigration).toContain(
+      "grant update\non table public.resumes\nto authenticated",
+    );
+    expect(milestoneTwoMigration).toContain(
+      "grant select, insert, update\non table public.resume_analysis\nto authenticated",
+    );
+    expect(milestoneTwoMigration).toContain(
+      "grant select, insert, update, delete\non table public.job_descriptions\nto authenticated",
+    );
+    expect(milestoneTwoMigration).toContain(
+      "grant select, insert, update\non table public.jd_analysis\nto authenticated",
+    );
+    expect(milestoneTwoMigration).not.toContain("to anon");
+    expect(milestoneTwoMigration).not.toContain("service_role");
+    expect(milestoneTwoMigration).not.toContain("security definer");
+  });
+
+  it("publishes only the two processing status tables to Realtime", () => {
+    expect(milestoneTwoMigration).toContain(
+      "alter publication supabase_realtime add table public.resumes",
+    );
+    expect(milestoneTwoMigration).toContain(
+      "alter publication supabase_realtime add table public.job_descriptions",
+    );
+    expect(
+      milestoneTwoMigration.match(
+        /alter publication supabase_realtime add table/g,
+      ),
+    ).toHaveLength(2);
   });
 });

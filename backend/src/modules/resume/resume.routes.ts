@@ -2,8 +2,12 @@ import type { FastifyInstance, preHandlerAsyncHookHandler } from "fastify";
 
 import {
   ResumeNotFoundError,
+  ResumeProcessingError,
   ResumeService,
+  ResumeStateError,
 } from "./resume.service.js";
+import type { AIClient } from "../../infrastructure/ai/ai.types.js";
+import type { PdfExtractor } from "./pdf-extractor.js";
 import {
   resumeCreateInputSchema,
   resumeParamsSchema,
@@ -13,6 +17,10 @@ import {
 interface ResumeRouteDependencies {
   authenticate: preHandlerAsyncHookHandler;
   resumeRepository: ResumeRepository;
+  pdfExtractor: PdfExtractor;
+  aiClient: AIClient;
+  maxPdfSizeBytes: number;
+  pdfTimeoutMs: number;
 }
 
 function notFoundResponse() {
@@ -38,7 +46,47 @@ export function registerResumeRoutes(
   app: FastifyInstance,
   dependencies: ResumeRouteDependencies,
 ): void {
-  const service = new ResumeService(dependencies.resumeRepository);
+  const service = new ResumeService({
+    repository: dependencies.resumeRepository,
+    pdfExtractor: dependencies.pdfExtractor,
+    aiClient: dependencies.aiClient,
+    maxPdfSizeBytes: dependencies.maxPdfSizeBytes,
+    pdfTimeoutMs: dependencies.pdfTimeoutMs,
+  });
+
+  function processError(error: unknown, requestId: string) {
+    if (error instanceof ResumeNotFoundError) {
+      return { statusCode: 404, body: notFoundResponse() };
+    }
+
+    if (error instanceof ResumeStateError) {
+      return {
+        statusCode: 409,
+        body: {
+          error: {
+            code: "RESUME_STATE_CONFLICT",
+            message: error.message,
+            requestId,
+          },
+        },
+      };
+    }
+
+    if (error instanceof ResumeProcessingError) {
+      return {
+        statusCode: error.statusCode,
+        body: {
+          error: {
+            code: error.code,
+            message: error.message,
+            requestId,
+          },
+        },
+      };
+    }
+
+    throw error;
+  }
 
   app.post(
     "/api/v1/resumes",
@@ -101,8 +149,13 @@ export function registerResumeRoutes(
           result.data.resumeId,
         );
 
+        const analysis = await service.findAnalysis(
+          request.authContext!,
+          result.data.resumeId,
+        );
+
         return reply.send({
-          data: { resume },
+          data: { resume, analysis },
           meta: { requestId: request.id },
         });
       } catch (error) {
@@ -114,6 +167,37 @@ export function registerResumeRoutes(
       }
     },
   );
+
+  for (const operation of ["process", "retry"] as const) {
+    app.post(
+      `/api/v1/resumes/:resumeId/${operation}`,
+      { preHandler: dependencies.authenticate },
+      async (request, reply) => {
+        const result = resumeParamsSchema.safeParse(request.params);
+
+        if (!result.success) {
+          return reply
+            .status(400)
+            .send(validationResponse("The resume ID is invalid.", null));
+        }
+
+        try {
+          const processed = await service.processResume(
+            request.authContext!,
+            result.data.resumeId,
+            operation,
+          );
+          return reply.send({
+            data: processed,
+            meta: { requestId: request.id },
+          });
+        } catch (error) {
+          const mapped = processError(error, request.id);
+          return reply.status(mapped.statusCode).send(mapped.body);
+        }
+      },
+    );
+  }
 
   app.delete(
     "/api/v1/resumes/:resumeId",

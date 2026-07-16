@@ -4,6 +4,7 @@ import { buildApp } from "../src/app.js";
 import type { AuthVerifier } from "../src/modules/auth/auth.types.js";
 import type {
   NewResumeRecord,
+  ResumeAnalysis,
   Resume,
   ResumeRepository,
 } from "../src/modules/resume/resume.types.js";
@@ -28,6 +29,7 @@ const authVerifier: AuthVerifier = {
 
 function createResumeRepository() {
   const resumes = new Map<string, Resume>();
+  const analyses = new Map<string, ResumeAnalysis>();
   const removedStoragePaths: string[] = [];
 
   const repository: ResumeRepository = {
@@ -62,6 +64,62 @@ function createResumeRepository() {
           ? (resumes.get(resumeId) ?? null)
           : null,
       ),
+    updateForUser: (userId, _accessToken, resumeId, changes) => {
+      const existing = resumes.get(resumeId);
+      if (!existing || existing.user_id !== userId) {
+        return Promise.reject(new Error("Resume not found."));
+      }
+      const updated = {
+        ...existing,
+        ...changes,
+        updated_at: new Date().toISOString(),
+      };
+      resumes.set(resumeId, updated);
+      return Promise.resolve(updated);
+    },
+    transitionForUser: (
+      userId,
+      _accessToken,
+      resumeId,
+      expectedStatus,
+      changes,
+    ) => {
+      const existing = resumes.get(resumeId);
+      if (
+        !existing ||
+        existing.user_id !== userId ||
+        existing.status !== expectedStatus
+      ) {
+        return Promise.resolve(null);
+      }
+      const updated = {
+        ...existing,
+        ...changes,
+        updated_at: new Date().toISOString(),
+      };
+      resumes.set(resumeId, updated);
+      return Promise.resolve(updated);
+    },
+    downloadStorageObject: () =>
+      Promise.resolve(new TextEncoder().encode("%PDF-1.7 test")),
+    findAnalysisForResume: (userId, _accessToken, resumeId) =>
+      Promise.resolve(
+        analyses.get(resumeId)?.user_id === userId
+          ? (analyses.get(resumeId) ?? null)
+          : null,
+      ),
+    upsertAnalysis: (userId, _accessToken, analysis) => {
+      const timestamp = new Date().toISOString();
+      const saved: ResumeAnalysis = {
+        ...analysis,
+        user_id: userId,
+        id: "33333333-3333-4333-8333-333333333333",
+        created_at: timestamp,
+        updated_at: timestamp,
+      };
+      analyses.set(analysis.resume_id, saved);
+      return Promise.resolve(saved);
+    },
     removeStorageObject: (_accessToken, storagePath) => {
       removedStoragePaths.push(storagePath);
       return Promise.resolve();

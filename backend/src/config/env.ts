@@ -7,6 +7,10 @@ const environmentSchema = z.object({
   CORS_ORIGINS: z.string().default("http://localhost:3000"),
   SUPABASE_URL: z.url(),
   SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
+  GEMINI_API_KEY: z.string().min(1),
+  GEMINI_MODEL: z.string().min(1),
+  MAX_PDF_SIZE_MB: z.coerce.number().positive().max(5).default(5),
+  AI_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(120_000).default(30_000),
 });
 
 export interface AppEnvironment {
@@ -16,6 +20,10 @@ export interface AppEnvironment {
   corsOrigins: string[];
   supabaseUrl: string;
   supabasePublishableKey: string;
+  geminiApiKey: string;
+  geminiModel: string;
+  maxPdfSizeMb: number;
+  aiTimeoutMs: number;
 }
 
 export function loadEnvironment(source: NodeJS.ProcessEnv): AppEnvironment {
@@ -30,5 +38,9 @@ export function loadEnvironment(source: NodeJS.ProcessEnv): AppEnvironment {
       .filter(Boolean),
     supabaseUrl: environment.SUPABASE_URL,
     supabasePublishableKey: environment.SUPABASE_PUBLISHABLE_KEY,
+    geminiApiKey: environment.GEMINI_API_KEY,
+    geminiModel: environment.GEMINI_MODEL,
+    maxPdfSizeMb: environment.MAX_PDF_SIZE_MB,
+    aiTimeoutMs: environment.AI_TIMEOUT_MS,
   };
 }
