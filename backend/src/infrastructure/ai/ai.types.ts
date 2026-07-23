@@ -22,7 +22,6 @@ export interface AIClient {
     schema: z.ZodType<T>;
     promptVersion: string;
     schemaVersion: string;
-    temperature?: number;
   }): Promise<{ data: T; metadata: AIMetadata }>;
 }
 

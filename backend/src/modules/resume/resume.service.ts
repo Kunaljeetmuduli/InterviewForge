@@ -109,10 +109,19 @@ function processingError(error: unknown): ResumeProcessingError {
   }
 
   if (error instanceof AIClientError) {
-    const statusCode = error.code === "AI_TIMEOUT" ? 504 : 503;
+    const statusCode =
+      error.code === "AI_TIMEOUT"
+        ? 504
+        : error.code === "AI_SCHEMA_INVALID"
+          ? 502
+          : 503;
+    const message =
+      error.code === "AI_SCHEMA_INVALID"
+        ? "Resume analysis returned an invalid response. Try again."
+        : "Resume analysis is temporarily unavailable. Try again.";
     return new ResumeProcessingError(
       error.code,
-      "Resume analysis is temporarily unavailable. Try again.",
+      message,
       statusCode,
       { cause: error },
     );
@@ -301,7 +310,6 @@ export class ResumeService {
         schema: resumeAnalysisOutputSchema,
         promptVersion: RESUME_PROMPT_VERSION,
         schemaVersion: RESUME_SCHEMA_VERSION,
-        temperature: 0.1,
       });
       const analysis = await this.dependencies.repository.upsertAnalysis(
         context.user.id,

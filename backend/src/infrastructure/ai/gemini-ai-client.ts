@@ -9,6 +9,16 @@ import {
 
 const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
 const RETRY_DELAYS_MS = [250, 750] as const;
+const PROVIDER_SCHEMA_CONSTRAINT_KEYS = new Set([
+  "$schema",
+  "additionalProperties",
+  "maximum",
+  "maxItems",
+  "maxLength",
+  "minimum",
+  "minItems",
+  "minLength",
+]);
 
 interface GeminiAIClientOptions {
   apiKey: string;
@@ -26,10 +36,26 @@ function isTimeout(error: unknown): boolean {
   ) || (error instanceof Error && /timed?\s*out|timeout/i.test(error.message));
 }
 
-function withoutSchemaDeclaration(schema: z.core.JSONSchema.JSONSchema) {
-  const jsonSchema = { ...schema } as Record<string, unknown>;
-  delete jsonSchema.$schema;
-  return jsonSchema;
+export function toGeminiResponseSchema(
+  value: unknown,
+): z.core.JSONSchema.JSONSchema {
+  function sanitize(current: unknown): unknown {
+    if (Array.isArray(current)) {
+      return current.map(sanitize);
+    }
+
+    if (!current || typeof current !== "object") {
+      return current;
+    }
+
+    return Object.fromEntries(
+      Object.entries(current)
+        .filter(([key]) => !PROVIDER_SCHEMA_CONSTRAINT_KEYS.has(key))
+        .map(([key, nestedValue]) => [key, sanitize(nestedValue)]),
+    );
+  }
+
+  return sanitize(value) as z.core.JSONSchema.JSONSchema;
 }
 
 export class GeminiAIClient implements AIClient {
@@ -46,7 +72,6 @@ export class GeminiAIClient implements AIClient {
     schema: z.ZodType<T>;
     promptVersion: string;
     schemaVersion: string;
-    temperature?: number;
   }): Promise<{ data: T; metadata: AIMetadata }> {
     const startedAt = performance.now();
     let schemaRetryUsed = false;
@@ -61,10 +86,9 @@ export class GeminiAIClient implements AIClient {
             systemInstruction: schemaRetryUsed
               ? `${request.systemPrompt}\nReturn JSON that exactly matches the supplied schema. Do not add fields.`
               : request.systemPrompt,
-            temperature: request.temperature ?? 0.1,
             maxOutputTokens: 4_096,
             responseMimeType: "application/json",
-            responseJsonSchema: withoutSchemaDeclaration(
+            responseJsonSchema: toGeminiResponseSchema(
               z.toJSONSchema(request.schema),
             ),
             httpOptions: {
@@ -132,6 +156,14 @@ export class GeminiAIClient implements AIClient {
           await wait(RETRY_DELAYS_MS[transientAttempt] ?? 750);
           transientAttempt += 1;
           continue;
+        }
+
+        if (error instanceof ApiError && error.status === 400) {
+          throw new AIClientError(
+            "AI_SCHEMA_INVALID",
+            "The AI provider rejected the structured-output schema.",
+            { cause: error },
+          );
         }
 
         if (isTimeout(error)) {

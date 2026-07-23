@@ -1,15 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-const generateContent = vi.hoisted(() => vi.fn());
+interface GenerateContentRequest {
+  config: Record<string, unknown>;
+}
+
+const generateContent = vi.hoisted(() =>
+  vi.fn<(request: GenerateContentRequest) => Promise<unknown>>(),
+);
 
 vi.mock("@google/genai", () => ({
   ApiError: class ApiError extends Error {
     status: number;
 
-    constructor(status = 500) {
-      super("API error");
-      this.status = status;
+    constructor(options: { message: string; status: number }) {
+      super(options.message);
+      this.status = options.status;
     }
   },
   GoogleGenAI: class GoogleGenAI {
@@ -17,9 +23,26 @@ vi.mock("@google/genai", () => ({
   },
 }));
 
-import { GeminiAIClient } from "../src/infrastructure/ai/gemini-ai-client.js";
+import { ApiError } from "@google/genai";
+
+import {
+  GeminiAIClient,
+  toGeminiResponseSchema,
+} from "../src/infrastructure/ai/gemini-ai-client.js";
+import { jdExtractionOutputSchema } from "../src/prompts/jd-analysis/v1.js";
+import { resumeAnalysisOutputSchema } from "../src/prompts/resume-analysis/v1.js";
 
 const schema = z.object({ summary: z.string().min(1) });
+const removedProviderKeywords = [
+  "$schema",
+  "additionalProperties",
+  "maximum",
+  "maxItems",
+  "maxLength",
+  "minimum",
+  "minItems",
+  "minLength",
+] as const;
 
 function client() {
   return new GeminiAIClient({
@@ -53,6 +76,9 @@ describe("GeminiAIClient", () => {
     });
 
     expect(generateContent).toHaveBeenCalledTimes(2);
+    expect(generateContent.mock.calls[0]?.[0].config).not.toHaveProperty(
+      "temperature",
+    );
     expect(result).toMatchObject({
       data: { summary: "Backend engineer" },
       metadata: {
@@ -95,4 +121,42 @@ describe("GeminiAIClient", () => {
       }),
     ).rejects.toMatchObject({ code: "AI_TIMEOUT" });
   });
+
+  it("maps a provider schema rejection to a stable schema error", async () => {
+    generateContent.mockRejectedValue(
+      new ApiError({ message: "Invalid schema.", status: 400 }),
+    );
+
+    await expect(
+      client().generateStructured({
+        task: "test",
+        systemPrompt: "Return structured data.",
+        input: "source",
+        schema,
+        promptVersion: "prompt-v1",
+        schemaVersion: "schema-v1",
+      }),
+    ).rejects.toMatchObject({ code: "AI_SCHEMA_INVALID" });
+    expect(generateContent).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["resume", resumeAnalysisOutputSchema],
+    ["job-description", jdExtractionOutputSchema],
+  ])(
+    "creates a provider-safe structural schema for %s analysis",
+    (_task, outputSchema) => {
+      const providerSchema = toGeminiResponseSchema(
+        z.toJSONSchema(outputSchema),
+      );
+      const serialized = JSON.stringify(providerSchema);
+
+      expect(providerSchema.type).toBe("object");
+      expect(providerSchema.properties).toBeTypeOf("object");
+      expect(Array.isArray(providerSchema.required)).toBe(true);
+      for (const keyword of removedProviderKeywords) {
+        expect(serialized).not.toContain(`"${keyword}"`);
+      }
+    },
+  );
 });

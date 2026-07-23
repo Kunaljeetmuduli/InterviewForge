@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";
-import type { AIClient } from "../src/infrastructure/ai/ai.types.js";
+import {
+  AIClientError,
+  type AIClient,
+} from "../src/infrastructure/ai/ai.types.js";
 import type { AuthVerifier } from "../src/modules/auth/auth.types.js";
 import type { PdfExtractor } from "../src/modules/resume/pdf-extractor.js";
 import type {
@@ -254,5 +257,43 @@ describe("resume processing", () => {
     expect(duplicateRequest.statusCode).toBe(409);
     expect(inputs).toHaveLength(1);
     expect(state.resumes.get(resume.id)?.processing_attempt).toBe(1);
+  });
+
+  it("returns a clear gateway error when structured AI output is invalid", async () => {
+    const state = createRepository();
+    const app = createApp(
+      state.repository,
+      {
+        extract: () =>
+          Promise.resolve({
+            text: "Backend engineering experience. ".repeat(12),
+            pageCount: 1,
+          }),
+      },
+      {
+        generateStructured: () =>
+          Promise.reject(
+            new AIClientError(
+              "AI_SCHEMA_INVALID",
+              "The provider rejected the schema.",
+            ),
+          ),
+      },
+    );
+    const resume = await createResume(app);
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/v1/resumes/${resume.id}/process`,
+      headers: { authorization: "Bearer token" },
+    });
+
+    expect(response.statusCode).toBe(502);
+    expect(response.json()).toMatchObject({
+      error: {
+        code: "AI_SCHEMA_INVALID",
+        message: "Resume analysis returned an invalid response. Try again.",
+      },
+    });
+    expect(state.resumes.get(resume.id)?.status).toBe("failed");
   });
 });

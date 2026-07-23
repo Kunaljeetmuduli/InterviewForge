@@ -62,10 +62,20 @@ function safeProcessingError(error: unknown) {
   }
 
   if (error instanceof AIClientError) {
+    const statusCode =
+      error.code === "AI_TIMEOUT"
+        ? 504
+        : error.code === "AI_SCHEMA_INVALID"
+          ? 502
+          : 503;
+    const message =
+      error.code === "AI_SCHEMA_INVALID"
+        ? "Job-description analysis returned an invalid response. Try again."
+        : "Job-description analysis is temporarily unavailable. Try again.";
     return new JobDescriptionProcessingError(
       error.code,
-      "Job-description analysis is temporarily unavailable. Try again.",
-      error.code === "AI_TIMEOUT" ? 504 : 503,
+      message,
+      statusCode,
       { cause: error },
     );
   }
@@ -217,7 +227,6 @@ export class JobDescriptionService {
         schema: jdExtractionOutputSchema,
         promptVersion: JD_PROMPT_VERSION,
         schemaVersion: JD_SCHEMA_VERSION,
-        temperature: 0.1,
       });
       const alignment = calculateJDAlignment(generated.data, resumeAnalysis);
       const analysis = await this.dependencies.repository.upsertAnalysis(

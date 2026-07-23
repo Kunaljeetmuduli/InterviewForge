@@ -228,4 +228,33 @@ describe("job-description analysis", () => {
     expect(duplicateRetry.statusCode).toBe(409);
     expect(calls).toBe(2);
   });
+
+  it("returns a clear gateway error when structured AI output is invalid", async () => {
+    const state = createJobRepository();
+    const app = createApp(state.repository, resumeRepository(), {
+      generateStructured: () =>
+        Promise.reject(
+          new AIClientError(
+            "AI_SCHEMA_INVALID",
+            "The provider rejected the schema.",
+          ),
+        ),
+    });
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/job-descriptions",
+      headers: { authorization: "Bearer token" },
+      payload: validPayload,
+    });
+
+    expect(response.statusCode).toBe(502);
+    expect(response.json()).toMatchObject({
+      error: {
+        code: "AI_SCHEMA_INVALID",
+        message:
+          "Job-description analysis returned an invalid response. Try again.",
+      },
+    });
+    expect([...state.jobs.values()][0]?.status).toBe("failed");
+  });
 });
