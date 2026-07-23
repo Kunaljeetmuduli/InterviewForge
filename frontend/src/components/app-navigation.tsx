@@ -1,6 +1,6 @@
 "use client";
 
-import { BriefcaseBusiness, FileText, LayoutDashboard, UserRound } from "lucide-react";
+import { BriefcaseBusiness, FileText, History, LayoutDashboard, Map, MessagesSquare, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,6 +12,9 @@ const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Resume Analysis", href: "/resumes", icon: FileText },
   { label: "Job Descriptions", href: "/jobs", icon: BriefcaseBusiness },
+  { label: "Interviews", href: "/interviews/new", icon: MessagesSquare },
+  { label: "Roadmap", href: "/roadmap", icon: Map },
+  { label: "History", href: "/history", icon: History },
 ] as const;
 
 export function AppNavigation() {
@@ -29,9 +32,9 @@ export function AppNavigation() {
               <Link
                 key={href}
                 href={href}
-                aria-current={pathname === href ? "page" : undefined}
+                aria-current={pathname === href || pathname.startsWith("/interviews/") && href === "/interviews/new" ? "page" : undefined}
                 className={`flex min-h-10 items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium ${
-                  pathname === href
+                  pathname === href || pathname.startsWith("/interviews/") && href === "/interviews/new"
                     ? "bg-primary-soft text-primary"
                     : "text-muted-foreground hover:bg-surface-subtle hover:text-foreground"
                 }`}
@@ -51,9 +54,9 @@ export function AppNavigation() {
               key={href}
               href={href}
               aria-label={label}
-              aria-current={pathname === href ? "page" : undefined}
+              aria-current={pathname === href || pathname.startsWith("/interviews/") && href === "/interviews/new" ? "page" : undefined}
               className={`inline-flex size-10 items-center justify-center rounded-sm ${
-                pathname === href
+                pathname === href || pathname.startsWith("/interviews/") && href === "/interviews/new"
                   ? "bg-primary-soft text-primary"
                   : "text-muted-foreground hover:bg-surface-subtle hover:text-foreground"
               }`}

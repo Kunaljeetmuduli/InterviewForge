@@ -29,6 +29,27 @@ const milestoneTwoMigration = readFileSync(
   ),
   "utf8",
 ).toLowerCase();
+const milestoneThreeMigration = readFileSync(
+  resolve(
+    migrationsDirectory,
+    "20260723090000_enable_interview_core_access.sql",
+  ),
+  "utf8",
+).toLowerCase();
+const emptyInterviewCleanupMigration = readFileSync(
+  resolve(
+    migrationsDirectory,
+    "20260723113000_reclassify_empty_completed_interviews.sql",
+  ),
+  "utf8",
+).toLowerCase();
+const milestoneFourMigration = readFileSync(
+  resolve(
+    migrationsDirectory,
+    "20260723220000_enable_milestone_4_roadmaps.sql",
+  ),
+  "utf8",
+).toLowerCase();
 
 const ownedTables = [
   "resumes",
@@ -144,5 +165,49 @@ describe("Milestone 2 migration", () => {
         /alter publication supabase_realtime add table/g,
       ),
     ).toHaveLength(2);
+  });
+});
+
+describe("Milestone 3 migration", () => {
+  it("grants only the operations required by the interview core", () => {
+    expect(milestoneThreeMigration).toContain(
+      "grant select, insert, update, delete\non table public.interviews\nto authenticated",
+    );
+    expect(milestoneThreeMigration).toContain(
+      "grant select, insert\non table public.questions\nto authenticated",
+    );
+    expect(milestoneThreeMigration).toContain(
+      "grant select, insert, update\non table public.answers\nto authenticated",
+    );
+    expect(milestoneThreeMigration).toContain(
+      "grant select, insert, update\non table public.evaluations\nto authenticated",
+    );
+    expect(milestoneThreeMigration).not.toContain("to anon");
+    expect(milestoneThreeMigration).not.toContain("service_role");
+    expect(milestoneThreeMigration).not.toContain("security definer");
+  });
+
+  it("reclassifies only completed interviews without answers", () => {
+    expect(emptyInterviewCleanupMigration).toContain(
+      "set\n  status = 'abandoned'",
+    );
+    expect(emptyInterviewCleanupMigration).toContain(
+      "where interview.status = 'completed'",
+    );
+    expect(emptyInterviewCleanupMigration).toContain(
+      "where answer.interview_id = interview.id",
+    );
+    expect(emptyInterviewCleanupMigration).not.toContain("delete");
+  });
+});
+
+describe("Milestone 4 migration", () => {
+  it("exposes only owned roadmap operations through the existing RLS policy", () => {
+    expect(milestoneFourMigration).toContain(
+      "grant select, insert, update, delete\non table public.roadmaps\nto authenticated",
+    );
+    expect(milestoneFourMigration).not.toContain("to anon");
+    expect(milestoneFourMigration).not.toContain("service_role");
+    expect(milestoneFourMigration).not.toContain("security definer");
   });
 });

@@ -6,9 +6,14 @@ import type { AIClient } from "./infrastructure/ai/ai.types.js";
 import { createAuthenticateHook } from "./modules/auth/auth.hook.js";
 import type { AuthVerifier } from "./modules/auth/auth.types.js";
 import { registerJobDescriptionRoutes } from "./modules/job-description/job-description.routes.js";
+import { registerDashboardRoutes } from "./modules/dashboard/dashboard.routes.js";
 import type { JobDescriptionRepository } from "./modules/job-description/job-description.types.js";
+import { registerInterviewRoutes } from "./modules/interview/interview.routes.js";
+import type { InterviewRepository } from "./modules/interview/interview.types.js";
 import { registerProfileRoutes } from "./modules/profile/profile.routes.js";
 import type { ProfileRepository } from "./modules/profile/profile.types.js";
+import { registerRoadmapRoutes } from "./modules/roadmap/roadmap.routes.js";
+import type { RoadmapRepository } from "./modules/roadmap/roadmap.types.js";
 import type { PdfExtractor } from "./modules/resume/pdf-extractor.js";
 import { registerResumeRoutes } from "./modules/resume/resume.routes.js";
 import type { ResumeRepository } from "./modules/resume/resume.types.js";
@@ -76,6 +81,29 @@ const unavailableJobDescriptionRepository: JobDescriptionRepository = {
     Promise.reject(new Error("Job-description repository is not configured.")),
 };
 
+const unavailableInterviewRepository: InterviewRepository = {
+  createInterview: () => Promise.reject(new Error("Interview repository is not configured.")),
+  listInterviews: () => Promise.reject(new Error("Interview repository is not configured.")),
+  findInterview: () => Promise.reject(new Error("Interview repository is not configured.")),
+  updateInterview: () => Promise.reject(new Error("Interview repository is not configured.")),
+  transitionInterview: () => Promise.reject(new Error("Interview repository is not configured.")),
+  insertQuestion: () => Promise.reject(new Error("Interview repository is not configured.")),
+  listQuestions: () => Promise.reject(new Error("Interview repository is not configured.")),
+  insertAnswer: () => Promise.reject(new Error("Interview repository is not configured.")),
+  listAnswers: () => Promise.reject(new Error("Interview repository is not configured.")),
+  findAnswerByRequestId: () => Promise.reject(new Error("Interview repository is not configured.")),
+  findAnswer: () => Promise.reject(new Error("Interview repository is not configured.")),
+  updateAnswer: () => Promise.reject(new Error("Interview repository is not configured.")),
+  listEvaluations: () => Promise.reject(new Error("Interview repository is not configured.")),
+  findEvaluationByAnswer: () => Promise.reject(new Error("Interview repository is not configured.")),
+  upsertEvaluation: () => Promise.reject(new Error("Interview repository is not configured.")),
+  deleteInterview: () => Promise.reject(new Error("Interview repository is not configured.")),
+};
+const unavailableRoadmapRepository: RoadmapRepository = {
+  latest: () => Promise.reject(new Error("Roadmap repository is not configured.")),
+  create: () => Promise.reject(new Error("Roadmap repository is not configured.")),
+};
+
 const unavailablePdfExtractor: PdfExtractor = {
   extract: () => Promise.reject(new Error("PDF extractor is not configured.")),
 };
@@ -92,6 +120,8 @@ interface BuildAppOptions {
   profileRepository?: ProfileRepository;
   resumeRepository?: ResumeRepository;
   jobDescriptionRepository?: JobDescriptionRepository;
+  interviewRepository?: InterviewRepository;
+  roadmapRepository?: RoadmapRepository;
   pdfExtractor?: PdfExtractor;
   aiClient?: AIClient;
   maxPdfSizeBytes?: number;
@@ -172,6 +202,25 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       options.jobDescriptionRepository ?? unavailableJobDescriptionRepository,
     resumeRepository: options.resumeRepository ?? unavailableResumeRepository,
     aiClient: options.aiClient ?? unavailableAIClient,
+  });
+  registerInterviewRoutes(app, {
+    authenticate,
+    repository: options.interviewRepository ?? unavailableInterviewRepository,
+    resumeRepository: options.resumeRepository ?? unavailableResumeRepository,
+    jobDescriptionRepository:
+      options.jobDescriptionRepository ?? unavailableJobDescriptionRepository,
+    aiClient: options.aiClient ?? unavailableAIClient,
+  });
+  const interviewRepository =
+    options.interviewRepository ?? unavailableInterviewRepository;
+  registerDashboardRoutes(app, {
+    authenticate,
+    repository: interviewRepository,
+  });
+  registerRoadmapRoutes(app, {
+    authenticate,
+    repository: options.roadmapRepository ?? unavailableRoadmapRepository,
+    interviewRepository,
   });
 
   return app;

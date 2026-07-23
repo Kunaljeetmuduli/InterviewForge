@@ -6,7 +6,9 @@ import { GeminiAIClient } from "./infrastructure/ai/gemini-ai-client.js";
 import {
   createSupabaseAuthVerifier,
   createSupabaseJobDescriptionRepository,
+  createSupabaseInterviewRepository,
   createSupabaseProfileRepository,
+  createSupabaseRoadmapRepository,
   createSupabaseResumeRepository,
 } from "./infrastructure/supabase.js";
 import { PdfParseExtractor } from "./modules/resume/pdf-extractor.js";
@@ -37,6 +39,8 @@ const app = buildApp({
   resumeRepository: createSupabaseResumeRepository(environment),
   jobDescriptionRepository:
     createSupabaseJobDescriptionRepository(environment),
+  interviewRepository: createSupabaseInterviewRepository(environment),
+  roadmapRepository: createSupabaseRoadmapRepository(environment),
   pdfExtractor: new PdfParseExtractor(),
   aiClient,
   maxPdfSizeBytes: environment.maxPdfSizeMb * 1024 * 1024,

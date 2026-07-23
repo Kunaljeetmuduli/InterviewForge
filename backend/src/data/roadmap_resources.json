@@ -1,0 +1,9 @@
+[
+  {"id":"mdn-http-overview","title":"HTTP overview","url":"https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview","topics":["http","rest apis","web technologies","backend"],"kind":"Guide"},
+  {"id":"postgresql-tutorial","title":"PostgreSQL tutorial","url":"https://www.postgresql.org/docs/current/tutorial.html","topics":["sql","databases","postgresql"],"kind":"Tutorial"},
+  {"id":"postgresql-indexes","title":"PostgreSQL indexes","url":"https://www.postgresql.org/docs/current/indexes.html","topics":["sql","databases","system design"],"kind":"Documentation"},
+  {"id":"oracle-oop-concepts","title":"Object-oriented programming concepts","url":"https://docs.oracle.com/javase/tutorial/java/concepts/","topics":["java","oop","object-oriented programming"],"kind":"Tutorial"},
+  {"id":"ostep","title":"Operating Systems: Three Easy Pieces","url":"https://pages.cs.wisc.edu/~remzi/OSTEP/","topics":["operating systems","concurrency","memory"],"kind":"Book"},
+  {"id":"owasp-authorization","title":"OWASP Authorization Cheat Sheet","url":"https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html","topics":["authorization","authentication","security"],"kind":"Guide"},
+  {"id":"visualgo","title":"VisuAlgo data structures and algorithms","url":"https://visualgo.net/en","topics":["arrays","linked lists","graphs","dynamic programming","algorithms","dsa"],"kind":"Interactive"}
+]

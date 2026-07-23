@@ -9,6 +9,17 @@ import {
   type JobDescriptionRepository,
 } from "../modules/job-description/job-description.types.js";
 import {
+  answerSchema,
+  evaluationSchema,
+  interviewSchema,
+  questionSchema,
+  type InterviewRepository,
+} from "../modules/interview/interview.types.js";
+import {
+  roadmapSchema,
+  type RoadmapRepository,
+} from "../modules/roadmap/roadmap.types.js";
+import {
   profileSchema,
   type ProfileInput,
   type ProfileRepository,
@@ -32,6 +43,16 @@ const jobDescriptionSelect =
   "id, user_id, title, company, raw_text, status, error_code, error_message, created_at, updated_at";
 const jobDescriptionAnalysisSelect =
   "id, user_id, job_description_id, required_skills, preferred_skills, minimum_experience, responsibilities, keywords, matching_skills, missing_skills, alignment_score, alignment_algorithm_version, provider, model, prompt_version, schema_version, created_at, updated_at";
+const interviewSelect =
+  "id, user_id, resume_id, job_description_id, type, status, current_difficulty, question_limit, target_topics, adaptive_engine_version, overall_score, started_at, completed_at, created_at, updated_at";
+const questionSelect =
+  "id, user_id, interview_id, sequence_number, text, type, topic, difficulty, expected_concepts, follow_up_topics, estimated_seconds, source, question_bank_id, adaptation_strategy, adaptation_reason, provider, model, prompt_version, schema_version, created_at";
+const answerSelect =
+  "id, user_id, interview_id, question_id, client_request_id, transcript, input_mode, processing_status, speaking_duration_seconds, word_count, filler_words, filler_rate, words_per_minute, submitted_at, updated_at";
+const evaluationSelect =
+  "id, user_id, interview_id, question_id, answer_id, overall_score, technical_score, communication_score, completeness_score, relevance_score, delivery_score, strengths, weaknesses, detected_concepts, missing_concepts, improvement_tip, example_answer, provider, model, prompt_version, schema_version, rubric_version, created_at";
+const roadmapSelect =
+  "id, user_id, source_interview_id, focus_topics, plan, resource_ids, algorithm_version, provider, model, prompt_version, schema_version, created_at, updated_at";
 
 function createRequestClient(
   environment: SupabaseEnvironment,
@@ -442,6 +463,224 @@ export function createSupabaseJobDescriptionRepository(
       }
 
       return jobDescriptionAnalysisSchema.parse(data);
+    },
+  };
+}
+
+export function createSupabaseInterviewRepository(
+  environment: SupabaseEnvironment,
+): InterviewRepository {
+  return {
+    async createInterview(userId, accessToken, record) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("interviews")
+        .insert({ ...record, user_id: userId })
+        .select(interviewSelect)
+        .single();
+      if (error) throw error;
+      return interviewSchema.parse(data);
+    },
+
+    async listInterviews(userId, accessToken) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("interviews")
+        .select(interviewSelect)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return interviewSchema.array().parse(data);
+    },
+
+    async findInterview(userId, accessToken, interviewId) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("interviews")
+        .select(interviewSelect)
+        .eq("id", interviewId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? interviewSchema.parse(data) : null;
+    },
+
+    async updateInterview(userId, accessToken, interviewId, changes) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("interviews")
+        .update({ ...changes, updated_at: new Date().toISOString() })
+        .eq("id", interviewId)
+        .eq("user_id", userId)
+        .select(interviewSelect)
+        .single();
+      if (error) throw error;
+      return interviewSchema.parse(data);
+    },
+
+    async transitionInterview(
+      userId,
+      accessToken,
+      interviewId,
+      expectedStatus,
+      changes,
+    ) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("interviews")
+        .update({ ...changes, updated_at: new Date().toISOString() })
+        .eq("id", interviewId)
+        .eq("user_id", userId)
+        .eq("status", expectedStatus)
+        .select(interviewSelect)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? interviewSchema.parse(data) : null;
+    },
+
+    async insertQuestion(userId, accessToken, question) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("questions")
+        .insert({ ...question, user_id: userId })
+        .select(questionSelect)
+        .single();
+      if (error) throw error;
+      return questionSchema.parse(data);
+    },
+
+    async listQuestions(userId, accessToken, interviewId) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("questions")
+        .select(questionSelect)
+        .eq("user_id", userId)
+        .eq("interview_id", interviewId)
+        .order("sequence_number", { ascending: true });
+      if (error) throw error;
+      return questionSchema.array().parse(data);
+    },
+
+    async insertAnswer(userId, accessToken, answer) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("answers")
+        .insert({ ...answer, user_id: userId })
+        .select(answerSelect)
+        .single();
+      if (error) throw error;
+      return answerSchema.parse(data);
+    },
+
+    async listAnswers(userId, accessToken, interviewId) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("answers")
+        .select(answerSelect)
+        .eq("user_id", userId)
+        .eq("interview_id", interviewId)
+        .order("submitted_at", { ascending: true });
+      if (error) throw error;
+      return answerSchema.array().parse(data);
+    },
+
+    async findAnswerByRequestId(
+      userId,
+      accessToken,
+      interviewId,
+      clientRequestId,
+    ) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("answers")
+        .select(answerSelect)
+        .eq("user_id", userId)
+        .eq("interview_id", interviewId)
+        .eq("client_request_id", clientRequestId)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? answerSchema.parse(data) : null;
+    },
+
+    async findAnswer(userId, accessToken, answerId) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("answers")
+        .select(answerSelect)
+        .eq("user_id", userId)
+        .eq("id", answerId)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? answerSchema.parse(data) : null;
+    },
+
+    async updateAnswer(userId, accessToken, answerId, changes) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("answers")
+        .update({ ...changes, updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("id", answerId)
+        .select(answerSelect)
+        .single();
+      if (error) throw error;
+      return answerSchema.parse(data);
+    },
+
+    async listEvaluations(userId, accessToken, interviewId) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("evaluations")
+        .select(evaluationSelect)
+        .eq("user_id", userId)
+        .eq("interview_id", interviewId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return evaluationSchema.array().parse(data);
+    },
+
+    async findEvaluationByAnswer(userId, accessToken, answerId) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("evaluations")
+        .select(evaluationSelect)
+        .eq("user_id", userId)
+        .eq("answer_id", answerId)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? evaluationSchema.parse(data) : null;
+    },
+
+    async upsertEvaluation(userId, accessToken, evaluation) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("evaluations")
+        .upsert({ ...evaluation, user_id: userId }, { onConflict: "answer_id" })
+        .select(evaluationSelect)
+        .single();
+      if (error) throw error;
+      return evaluationSchema.parse(data);
+    },
+
+    async deleteInterview(userId, accessToken, interviewId) {
+      const { error } = await createRequestClient(environment, accessToken)
+        .from("interviews")
+        .delete()
+        .eq("user_id", userId)
+        .eq("id", interviewId);
+      if (error) throw error;
+    },
+  };
+}
+
+export function createSupabaseRoadmapRepository(
+  environment: SupabaseEnvironment,
+): RoadmapRepository {
+  return {
+    async latest(userId, accessToken) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("roadmaps")
+        .select(roadmapSelect)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? roadmapSchema.parse(data) : null;
+    },
+    async create(userId, accessToken, record) {
+      const { data, error } = await createRequestClient(environment, accessToken)
+        .from("roadmaps")
+        .insert({ ...record, user_id: userId })
+        .select(roadmapSelect)
+        .single();
+      if (error) throw error;
+      return roadmapSchema.parse(data);
     },
   };
 }
